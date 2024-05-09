@@ -1,0 +1,4 @@
+
+# Don't check in the WASM file or supporting JS files
+/assets/earthly.wasm
+/assets/wasm_exec.js
