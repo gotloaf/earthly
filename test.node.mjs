@@ -39,7 +39,19 @@ globalThis.require("./assets/wasm_exec");
 	// Go should be in the process of starting. Wait for Go to signal to us that the functions are ready to use.
 	await mountedPromise;
 
-	console.log(earthlyGenerate());
+	const output = earthlyGenerate(JSON.stringify({
+		size: 128,
+		background: [255, 0, 0, 255],
+	}));
+
+	console.log(output);
+
+	if (!(output instanceof Uint8Array) || output.length == 0) {
+		console.log(`Test failed, output should have been Uint8Array of greater than 0 size but it was: ${output}`);
+		process.exit(-1);
+	}
+
+	await fs_promises.writeFile("output.test.png", output);
 
 	// Shut down earthly, which should allow the Go runtime to gracefully terminate.
 	earthlyShutdown();

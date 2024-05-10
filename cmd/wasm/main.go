@@ -32,20 +32,25 @@ func (app *EarthlyWASM) Initialize() {
 			return "earthlyGenerate takes one (1) argument for the earth generation config"
 		}
 
-		var config earthly.EarthlyConfig
+		var config *earthly.EarthlyConfig
+		config_bytes := []byte(args[0].String())
 
 		err := json.Unmarshal(
-			[]byte(args[0].String()),
+			config_bytes,
 			&config,
 		)
 
 		if err != nil {
-			return fmt.Sprintf("Encountered error while trying to unmarshal earthly config: %s", err)
+			fmt.Println("Encountered error while trying to unmarshal earthly config: ", err)
+			return 1
 		}
 
-		//buffer := config.Generate()
+		buffer := config.Generate()
+		data_bytes := buffer.Bytes()
+		js_buffer := js.Global().Get("Uint8Array").New(len(data_bytes))
+		js.CopyBytesToJS(js_buffer, data_bytes)
 
-		return 0
+		return js_buffer
 	})
 	js.Global().Set("earthlyGenerate", app.generateCallback)
 
