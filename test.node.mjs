@@ -40,7 +40,7 @@ globalThis.require("./assets/wasm_exec");
 	await mountedPromise;
 
 	const output = earthlyGenerate(JSON.stringify({
-		size: 128,
+		size: 1024,
 		background: [255, 0, 0, 255],
 	}));
 
