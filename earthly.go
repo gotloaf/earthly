@@ -10,6 +10,8 @@ import (
 type EarthlyConfig struct {
 	Size       int
 	Background []uint8
+	Latitude   float64
+	Longitude  float64
 }
 
 func (config *EarthlyConfig) Generate() *bytes.Buffer {
@@ -23,41 +25,71 @@ func (config *EarthlyConfig) Generate() *bytes.Buffer {
 	// In some cases we want to have border effects on the image so we make it a little smaller
 	var circleRadius = 0.9
 
+	// Pre-calculate the longitude and latitude's rotation matrix coefficients
+	latitudeRad := config.Latitude * (math.Pi / 180)
+	latitudeSin := math.Sin(latitudeRad)
+	latitudeCos := math.Cos(latitudeRad)
+	longitudeRad := config.Longitude * (math.Pi / 180)
+	longitudeSin := math.Sin(longitudeRad)
+	longitudeCos := math.Cos(longitudeRad)
+
 	for py := 0; py < config.Size; py++ {
 		for px := 0; px < config.Size; px++ {
-			var r, g, b, a uint8 = config.Background[0], config.Background[1], config.Background[2], config.Background[3]
+			var r, g, b uint8 = 0, 0, 0
+			var a float64 = 0.0
 
 			var u, v float64 = (float64(px) - halfSize) * onePxSize, -(float64(py) - halfSize) * onePxSize
 			magnitude := math.Sqrt(math.Pow(u, 2.0) + math.Pow(v, 2.0))
 			circleMagnitude := magnitude / circleRadius
-			var cx, cy = u / circleRadius, v / circleRadius
-			var cz = 0.0
+			var sphereX1, sphereY1 = u / circleRadius, v / circleRadius
+			var sphereZ1 = 0.0
 
 			if circleMagnitude < 1.0 {
-				cz = math.Sqrt(1.0 - math.Pow(circleMagnitude, 2.0))
+				sphereZ1 = math.Sqrt(1.0 - math.Pow(circleMagnitude, 2.0))
 			} else {
-				cx = cx / circleMagnitude
-				cy = cy / circleMagnitude
+				sphereX1 = sphereX1 / circleMagnitude
+				sphereY1 = sphereY1 / circleMagnitude
 			}
 
-			longitude := math.Asin(cy)
-			latitude := math.Atan2(-cx, cz)
+			// Calculate how the longitude rotates the sphere
+			sphereY2 := longitudeCos*sphereY1 + longitudeSin*sphereZ1
+			sphereZ2 := -longitudeSin*sphereY1 + longitudeCos*sphereZ1
 
-			if math.Mod(((longitude*(180/math.Pi))+360), 30) > 15 {
+			// Calculate how the latitude rotates the sphere
+			sphereX3 := latitudeCos*sphereX1 + -latitudeSin*sphereZ2
+			sphereZ3 := latitudeSin*sphereX1 + latitudeCos*sphereZ2
+
+			projectedLongitude := math.Asin(sphereY2)
+			projectedLatitude := math.Atan2(-sphereX3, sphereZ3)
+
+			if math.Mod(((projectedLongitude*(180/math.Pi))+360), 30) > 15 {
 				r = 128
 			}
 
-			if math.Mod(((latitude*(180/math.Pi))+360), 30) > 15 {
+			if math.Mod(((projectedLatitude*(180/math.Pi))+360), 30) > 15 {
 				g = 128
 			}
 
 			// Mask it into a soft circle shape
 			circleMask := 1.0 - math.Max(0.0, math.Min(1.0, (circleMagnitude-(1.0-twoPxSize))/twoPxSize))
 
-			canvas.Pix[(py-canvas.Rect.Min.Y)*canvas.Stride+(px-canvas.Rect.Min.X)*4+0] = r
-			canvas.Pix[(py-canvas.Rect.Min.Y)*canvas.Stride+(px-canvas.Rect.Min.X)*4+1] = g
-			canvas.Pix[(py-canvas.Rect.Min.Y)*canvas.Stride+(px-canvas.Rect.Min.X)*4+2] = b
-			canvas.Pix[(py-canvas.Rect.Min.Y)*canvas.Stride+(px-canvas.Rect.Min.X)*4+3] = uint8(float64(a) * circleMask)
+			a = circleMask
+
+			// Composite onto background
+			bg_a := float64(config.Background[3]) / 255.0
+			bg_r := float64(config.Background[0]) * bg_a
+			bg_g := float64(config.Background[1]) * bg_a
+			bg_b := float64(config.Background[2]) * bg_a
+
+			final_alpha := bg_a + a - bg_a*a
+			final_r := (float64(r)*a + bg_r*(1.0-a)) / final_alpha
+			final_g := (float64(g)*a + bg_g*(1.0-a)) / final_alpha
+			final_b := (float64(b)*a + bg_b*(1.0-a)) / final_alpha
+
+			canvas.Pix[(py-canvas.Rect.Min.Y)*canvas.Stride+(px-canvas.Rect.Min.X)*4+0] = uint8(final_r)
+			canvas.Pix[(py-canvas.Rect.Min.Y)*canvas.Stride+(px-canvas.Rect.Min.X)*4+1] = uint8(final_g)
+			canvas.Pix[(py-canvas.Rect.Min.Y)*canvas.Stride+(px-canvas.Rect.Min.X)*4+2] = uint8(final_b)
+			canvas.Pix[(py-canvas.Rect.Min.Y)*canvas.Stride+(px-canvas.Rect.Min.X)*4+3] = uint8(final_alpha * 255.0)
 		}
 	}
 
