@@ -41,9 +41,10 @@ globalThis.require("./assets/wasm_exec");
 
 	const output = earthlyGenerate(JSON.stringify({
 		size: 1024,
-		background: [255, 0, 0, 255],
-		latitude: 5,
+		background: [0, 0, 0, 0],
+		latitude: 45,
 		longitude: 30,
+		roll: 15,
 	}));
 
 	console.log(output);

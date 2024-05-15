@@ -8,10 +8,11 @@ import (
 )
 
 type EarthlyConfig struct {
-	Size       int
-	Background []uint8
-	Latitude   float64
-	Longitude  float64
+	Size       	int
+	Background 	[]uint8
+	Latitude   	float64
+	Longitude  	float64
+	Roll	   	float64
 }
 
 func (config *EarthlyConfig) Generate() *bytes.Buffer {
@@ -32,6 +33,16 @@ func (config *EarthlyConfig) Generate() *bytes.Buffer {
 	longitudeRad := config.Longitude * (math.Pi / 180)
 	longitudeSin := math.Sin(longitudeRad)
 	longitudeCos := math.Cos(longitudeRad)
+	rollRad := config.Roll * (math.Pi / 180)
+	rollSin := math.Sin(rollRad)
+	rollCos := math.Cos(rollRad)
+
+	matrix := []float64{
+		(latitudeCos * rollCos + latitudeSin * longitudeSin * rollSin), (latitudeSin * longitudeSin * rollCos - latitudeCos * rollSin), -(latitudeSin * longitudeCos),
+		(longitudeCos * rollSin), (longitudeCos * rollCos), (longitudeSin),
+		(latitudeSin * rollCos - latitudeCos * longitudeSin * rollSin), (-latitudeCos * longitudeSin * rollCos - latitudeSin * rollSin), (latitudeCos * longitudeCos),
+	}
+
 
 	for py := 0; py < config.Size; py++ {
 		for px := 0; px < config.Size; px++ {
@@ -51,16 +62,12 @@ func (config *EarthlyConfig) Generate() *bytes.Buffer {
 				sphereY1 = sphereY1 / circleMagnitude
 			}
 
-			// Calculate how the longitude rotates the sphere
-			sphereY2 := longitudeCos*sphereY1 + longitudeSin*sphereZ1
-			sphereZ2 := -longitudeSin*sphereY1 + longitudeCos*sphereZ1
-
-			// Calculate how the latitude rotates the sphere
-			sphereX3 := latitudeCos*sphereX1 + -latitudeSin*sphereZ2
-			sphereZ3 := latitudeSin*sphereX1 + latitudeCos*sphereZ2
+			sphereX2 := matrix[0] * sphereX1 + matrix[1] * sphereY1 + matrix[2] * sphereZ1
+			sphereY2 := matrix[3] * sphereX1 + matrix[4] * sphereY1 + matrix[5] * sphereZ1
+			sphereZ2 := matrix[6] * sphereX1 + matrix[7] * sphereY1 + matrix[8] * sphereZ1
 
 			projectedLongitude := math.Asin(sphereY2)
-			projectedLatitude := math.Atan2(-sphereX3, sphereZ3)
+			projectedLatitude := math.Atan2(-sphereX2, sphereZ2)
 
 			if math.Mod(((projectedLongitude*(180/math.Pi))+360), 30) > 15 {
 				r = 128
