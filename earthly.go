@@ -8,15 +8,27 @@ import (
 )
 
 type EarthlyConfig struct {
-	Size       	int
-	Background 	[]uint8
-	Latitude   	float64
-	Longitude  	float64
-	Roll	   	float64
+	Size       int
+	Background []uint8
+	Latitude   float64
+	Longitude  float64
+	Roll       float64
 }
 
-func (config *EarthlyConfig) Generate() *bytes.Buffer {
+type EarthlyBuffers struct {
+	Earth []byte
+}
+
+func (config *EarthlyConfig) Generate(buffers EarthlyBuffers) *bytes.Buffer {
 	canvas := image.NewNRGBA(image.Rect(0, 0, config.Size, config.Size))
+	earth, _, err := image.Decode(bytes.NewReader(buffers.Earth))
+
+	earthTexWidth := earth.Bounds().Dx()
+	earthTexHeight := earth.Bounds().Dy()
+
+	if err != nil {
+		return new(bytes.Buffer)
+	}
 
 	var halfSize float64 = float64(config.Size) / 2.0
 	var onePxSize = 1.0 / halfSize
@@ -38,11 +50,10 @@ func (config *EarthlyConfig) Generate() *bytes.Buffer {
 	rollCos := math.Cos(rollRad)
 
 	matrix := []float64{
-		(latitudeCos * rollCos + latitudeSin * longitudeSin * rollSin), (latitudeSin * longitudeSin * rollCos - latitudeCos * rollSin), -(latitudeSin * longitudeCos),
-		(longitudeCos * rollSin), (longitudeCos * rollCos), (longitudeSin),
-		(latitudeSin * rollCos - latitudeCos * longitudeSin * rollSin), (-latitudeCos * longitudeSin * rollCos - latitudeSin * rollSin), (latitudeCos * longitudeCos),
+		(latitudeCos*rollCos - latitudeSin*longitudeSin*rollSin), (latitudeSin*longitudeSin*rollCos + latitudeCos*rollSin), -(latitudeSin * longitudeCos),
+		(longitudeCos * -rollSin), (longitudeCos * rollCos), (longitudeSin),
+		(latitudeSin*rollCos + latitudeCos*longitudeSin*rollSin), (-latitudeCos*longitudeSin*rollCos + latitudeSin*rollSin), (latitudeCos * longitudeCos),
 	}
-
 
 	for py := 0; py < config.Size; py++ {
 		for px := 0; px < config.Size; px++ {
@@ -62,20 +73,34 @@ func (config *EarthlyConfig) Generate() *bytes.Buffer {
 				sphereY1 = sphereY1 / circleMagnitude
 			}
 
-			sphereX2 := matrix[0] * sphereX1 + matrix[1] * sphereY1 + matrix[2] * sphereZ1
-			sphereY2 := matrix[3] * sphereX1 + matrix[4] * sphereY1 + matrix[5] * sphereZ1
-			sphereZ2 := matrix[6] * sphereX1 + matrix[7] * sphereY1 + matrix[8] * sphereZ1
+			sphereX2 := matrix[0]*sphereX1 + matrix[1]*sphereY1 + matrix[2]*sphereZ1
+			sphereY2 := matrix[3]*sphereX1 + matrix[4]*sphereY1 + matrix[5]*sphereZ1
+			sphereZ2 := matrix[6]*sphereX1 + matrix[7]*sphereY1 + matrix[8]*sphereZ1
 
 			projectedLongitude := math.Asin(sphereY2)
 			projectedLatitude := math.Atan2(-sphereX2, sphereZ2)
 
-			if math.Mod(((projectedLongitude*(180/math.Pi))+360), 30) > 15 {
-				r = 128
+			// Sample from the earth texture
+			sampleX := earthTexWidth - 1 - (int(
+				(projectedLatitude+math.Pi)*(float64(earthTexWidth)/(math.Pi*2)),
+			) + earthTexWidth) % earthTexWidth
+
+			sampleY := earthTexHeight - 1 - int(
+				(projectedLongitude + math.Pi*0.5) * (float64(earthTexHeight) / math.Pi),
+			)
+
+			if sampleY < 0 {
+				sampleY = 0
+			}
+			if sampleY >= earthTexHeight {
+				sampleY = earthTexHeight
 			}
 
-			if math.Mod(((projectedLatitude*(180/math.Pi))+360), 30) > 15 {
-				g = 128
-			}
+			earthR, earthG, earthB, _ := earth.At(sampleX, sampleY).RGBA()
+
+			r = uint8(earthR % 256)
+			g = uint8(earthG % 256)
+			b = uint8(earthB % 256)
 
 			// Mask it into a soft circle shape
 			circleMask := 1.0 - math.Max(0.0, math.Min(1.0, (circleMagnitude-(1.0-twoPxSize))/twoPxSize))

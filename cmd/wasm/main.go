@@ -28,8 +28,12 @@ func New() *EarthlyWASM {
 
 func (app *EarthlyWASM) Initialize() {
 	app.generateCallback = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		if len(args) != 1 {
-			return "earthlyGenerate takes one (1) argument for the earth generation config"
+		if len(args) != 2 {
+			return `
+			earthlyGenerate takes two (2) arguments:
+			[1] a JSON-encoded string containing the generation config;
+			[2] a Uint8Array containing a equirectangular PNG for the earth
+			`
 		}
 
 		var config *earthly.EarthlyConfig
@@ -45,7 +49,12 @@ func (app *EarthlyWASM) Initialize() {
 			return 1
 		}
 
-		buffer := config.Generate()
+		earthBuffer := make([]byte, args[1].Get("byteLength").Int())
+		js.CopyBytesToGo(earthBuffer, args[1])
+
+		buffer := config.Generate(earthly.EarthlyBuffers{
+			Earth: earthBuffer,
+		})
 		data_bytes := buffer.Bytes()
 		js_buffer := js.Global().Get("Uint8Array").New(len(data_bytes))
 		js.CopyBytesToJS(js_buffer, data_bytes)

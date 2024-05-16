@@ -15,6 +15,10 @@ globalThis.crypto ??= crypto;
 globalThis.require("./assets/wasm_exec");
 
 (async () => {
+	// Load assets ahead of time
+	const earthPNGBuffer = await fs_promises.readFile("./assets/equirectangular/earth.png");
+	const earthPNG = new Uint8Array(earthPNGBuffer);
+
 	const go = new Go();
 
 	process.on("exit", (code) => {
@@ -42,10 +46,10 @@ globalThis.require("./assets/wasm_exec");
 	const output = earthlyGenerate(JSON.stringify({
 		size: 1024,
 		background: [0, 0, 0, 0],
-		latitude: 45,
-		longitude: 30,
-		roll: 15,
-	}));
+		latitude: -138,
+		longitude: 36,
+		roll: -30,
+	}), earthPNG);
 
 	console.log(output);
 
