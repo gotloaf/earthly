@@ -49,6 +49,7 @@ globalThis.require("./assets/wasm_exec");
 		latitude: -138,
 		longitude: 36,
 		roll: -30,
+		halo: true,
 	}), earthPNG);
 
 	console.log(output);

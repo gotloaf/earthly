@@ -13,10 +13,32 @@ type EarthlyConfig struct {
 	Latitude   float64
 	Longitude  float64
 	Roll       float64
+	Halo       bool
+	Radius	   float64
 }
 
 type EarthlyBuffers struct {
 	Earth []byte
+}
+
+func AlphaComposite(
+	fg_r uint8, fg_g uint8, fg_b uint8, fg_a uint8,
+	bg_r uint8, bg_g uint8, bg_b uint8, bg_a uint8,
+) (r uint8, g uint8, b uint8, a uint8) {
+
+	bg_af := float64(bg_a) / 255.0
+	bg_rf := float64(bg_r) * bg_af
+	bg_gf := float64(bg_g) * bg_af
+	bg_bf := float64(bg_b) * bg_af
+
+	af := float64(fg_a) / 255.0
+
+	final_alpha := bg_af + af - bg_af*af
+	final_r := (float64(fg_r)*af + bg_rf*(1.0-af)) / final_alpha
+	final_g := (float64(fg_g)*af + bg_gf*(1.0-af)) / final_alpha
+	final_b := (float64(fg_b)*af + bg_bf*(1.0-af)) / final_alpha
+
+	return uint8(final_r), uint8(final_g), uint8(final_b), uint8(final_alpha * 255.0)
 }
 
 func (config *EarthlyConfig) Generate(buffers EarthlyBuffers) *bytes.Buffer {
@@ -36,7 +58,10 @@ func (config *EarthlyConfig) Generate(buffers EarthlyBuffers) *bytes.Buffer {
 
 	// A circle of 1.0 radius would touch the very edges of the image
 	// In some cases we want to have border effects on the image so we make it a little smaller
-	var circleRadius = 0.9
+	var circleRadius = 1.0
+	if config.Radius > 0.0 {
+		circleRadius = config.Radius
+	}
 
 	// Pre-calculate the longitude and latitude's rotation matrix coefficients
 	latitudeRad := config.Latitude * (math.Pi / 180)
@@ -57,8 +82,7 @@ func (config *EarthlyConfig) Generate(buffers EarthlyBuffers) *bytes.Buffer {
 
 	for py := 0; py < config.Size; py++ {
 		for px := 0; px < config.Size; px++ {
-			var r, g, b uint8 = 0, 0, 0
-			var a float64 = 0.0
+			var r, g, b, a uint8 = 0, 0, 0, 0
 
 			var u, v float64 = (float64(px) - halfSize) * onePxSize, -(float64(py) - halfSize) * onePxSize
 			magnitude := math.Sqrt(math.Pow(u, 2.0) + math.Pow(v, 2.0))
@@ -83,10 +107,10 @@ func (config *EarthlyConfig) Generate(buffers EarthlyBuffers) *bytes.Buffer {
 			// Sample from the earth texture
 			sampleX := earthTexWidth - 1 - (int(
 				(projectedLatitude+math.Pi)*(float64(earthTexWidth)/(math.Pi*2)),
-			) + earthTexWidth) % earthTexWidth
+			)+earthTexWidth)%earthTexWidth
 
 			sampleY := earthTexHeight - 1 - int(
-				(projectedLongitude + math.Pi*0.5) * (float64(earthTexHeight) / math.Pi),
+				(projectedLongitude+math.Pi*0.5)*(float64(earthTexHeight)/math.Pi),
 			)
 
 			if sampleY < 0 {
@@ -105,23 +129,20 @@ func (config *EarthlyConfig) Generate(buffers EarthlyBuffers) *bytes.Buffer {
 			// Mask it into a soft circle shape
 			circleMask := 1.0 - math.Max(0.0, math.Min(1.0, (circleMagnitude-(1.0-twoPxSize))/twoPxSize))
 
-			a = circleMask
+			a = uint8(circleMask * 255.0)
 
-			// Composite onto background
-			bg_a := float64(config.Background[3]) / 255.0
-			bg_r := float64(config.Background[0]) * bg_a
-			bg_g := float64(config.Background[1]) * bg_a
-			bg_b := float64(config.Background[2]) * bg_a
+			if config.Halo {
+				haloMix := 255 - uint8(sphereZ1 * 255.0)
+				haloR, haloG, haloB, _ := AlphaComposite(160, 160, 255, haloMix, 0, 0, 255, 255)
+				r, g, b, _ = AlphaComposite(haloR, haloG, haloB, haloMix, r, g, b, 255)
+			}
 
-			final_alpha := bg_a + a - bg_a*a
-			final_r := (float64(r)*a + bg_r*(1.0-a)) / final_alpha
-			final_g := (float64(g)*a + bg_g*(1.0-a)) / final_alpha
-			final_b := (float64(b)*a + bg_b*(1.0-a)) / final_alpha
+			r, g, b, a = AlphaComposite(r, g, b, a, config.Background[0], config.Background[1], config.Background[2], config.Background[3])
 
-			canvas.Pix[(py-canvas.Rect.Min.Y)*canvas.Stride+(px-canvas.Rect.Min.X)*4+0] = uint8(final_r)
-			canvas.Pix[(py-canvas.Rect.Min.Y)*canvas.Stride+(px-canvas.Rect.Min.X)*4+1] = uint8(final_g)
-			canvas.Pix[(py-canvas.Rect.Min.Y)*canvas.Stride+(px-canvas.Rect.Min.X)*4+2] = uint8(final_b)
-			canvas.Pix[(py-canvas.Rect.Min.Y)*canvas.Stride+(px-canvas.Rect.Min.X)*4+3] = uint8(final_alpha * 255.0)
+			canvas.Pix[(py-canvas.Rect.Min.Y)*canvas.Stride+(px-canvas.Rect.Min.X)*4+0] = r
+			canvas.Pix[(py-canvas.Rect.Min.Y)*canvas.Stride+(px-canvas.Rect.Min.X)*4+1] = g
+			canvas.Pix[(py-canvas.Rect.Min.Y)*canvas.Stride+(px-canvas.Rect.Min.X)*4+2] = b
+			canvas.Pix[(py-canvas.Rect.Min.Y)*canvas.Stride+(px-canvas.Rect.Min.X)*4+3] = a
 		}
 	}
 
