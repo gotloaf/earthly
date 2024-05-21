@@ -12,12 +12,12 @@ globalThis.TextEncoder = TextEncoder;
 globalThis.TextDecoder = TextDecoder;
 globalThis.crypto ??= crypto;
 
-globalThis.require("./assets/wasm_exec");
+globalThis.require("./build/wasm_exec");
 
 (async () => {
 	// Load assets ahead of time
-	const earthPNGBuffer = await fs_promises.readFile("./assets/equirectangular/earth_2x.png");
-	const earthPNG = new Uint8Array(earthPNGBuffer);
+	const earthJPGBuffer = await fs_promises.readFile("./build/equirectangular/earth_1x.jpg");
+	const earthJPG = new Uint8Array(earthJPGBuffer);
 
 	const go = new Go();
 
@@ -29,7 +29,7 @@ globalThis.require("./assets/wasm_exec");
 		}
 	})
 
-	const wasmData = await fs_promises.readFile("./assets/earthly.wasm");
+	const wasmData = await fs_promises.readFile("./build/earthly.wasm");
 	const instantiated = await WebAssembly.instantiate(wasmData, go.importObject);
 
 	// In cmd/wasm/main.go we expect that a signal handler `_earthlyResolve` exists that allows us to know our program has mounted.
@@ -44,14 +44,14 @@ globalThis.require("./assets/wasm_exec");
 	await mountedPromise;
 
 	const output = earthlyGenerate(JSON.stringify({
-		size: 1024,
+		size: 512,
 		background: [0, 0, 0, 0],
 		latitude: -138,
 		longitude: 36,
 		roll: -30,
 		halo: true,
 		radius: 1.0,
-	}), earthPNG);
+	}), earthJPG);
 
 	console.log(output);
 

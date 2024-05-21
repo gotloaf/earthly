@@ -3,6 +3,7 @@ package earthly
 import (
 	"bytes"
 	"image"
+	"image/jpeg"
 	"image/png"
 	"math"
 )
@@ -14,7 +15,7 @@ type EarthlyConfig struct {
 	Longitude  float64
 	Roll       float64
 	Halo       bool
-	Radius	   float64
+	Radius     float64
 }
 
 type EarthlyBuffers struct {
@@ -43,7 +44,7 @@ func AlphaComposite(
 
 func (config *EarthlyConfig) Generate(buffers EarthlyBuffers) *bytes.Buffer {
 	canvas := image.NewNRGBA(image.Rect(0, 0, config.Size, config.Size))
-	earth, _, err := image.Decode(bytes.NewReader(buffers.Earth))
+	earth, err := jpeg.Decode(bytes.NewReader(buffers.Earth))
 
 	earthTexWidth := earth.Bounds().Dx()
 	earthTexHeight := earth.Bounds().Dy()
@@ -122,9 +123,9 @@ func (config *EarthlyConfig) Generate(buffers EarthlyBuffers) *bytes.Buffer {
 
 			earthR, earthG, earthB, _ := earth.At(sampleX, sampleY).RGBA()
 
-			r = uint8(earthR % 256)
-			g = uint8(earthG % 256)
-			b = uint8(earthB % 256)
+			r = uint8(earthR >> 8)
+			g = uint8(earthG >> 8)
+			b = uint8(earthB >> 8)
 
 			// Mask it into a soft circle shape
 			circleMask := 1.0 - math.Max(0.0, math.Min(1.0, (circleMagnitude-(1.0-twoPxSize))/twoPxSize))
@@ -132,7 +133,7 @@ func (config *EarthlyConfig) Generate(buffers EarthlyBuffers) *bytes.Buffer {
 			a = uint8(circleMask * 255.0)
 
 			if config.Halo {
-				haloMix := 255 - uint8(sphereZ1 * 255.0)
+				haloMix := 255 - uint8(sphereZ1*255.0)
 				haloR, haloG, haloB, _ := AlphaComposite(160, 160, 255, haloMix, 0, 0, 255, 255)
 				r, g, b, _ = AlphaComposite(haloR, haloG, haloB, haloMix, r, g, b, 255)
 			}

@@ -1,7 +1,6 @@
 
-# Don't check in the WASM file or supporting JS files
+# Don't check in the WASM file
 /build/earthly.wasm
-/build/wasm_exec.js
 
 # Don't check in test artifacts
 *.test.png

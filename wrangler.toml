@@ -3,9 +3,9 @@ main = "./build/worker.mjs"
 compatibility_date = "2024-05-01"
 
 [build]
-command = "powershell ./build_go.ps1"
+command = "powershell ./build_tinygo.ps1"
 
 [[rules]]
 type = "Data"
-globs = ["**/*.png"]
+globs = ["**/*.jpg"]
 fallthrough = false

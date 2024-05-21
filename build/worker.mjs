@@ -4,13 +4,8 @@ import mod from "./earthly.wasm";
 
 async function run(config) {
     const earth = await import(
-        config.size * config.zoom > 1024.0 ?
-        "./equirectangular/earth_2x.png" :
-        "./equirectangular/earth_1x.png"
+        "./equirectangular/earth_1x.jpg"
     );
-
-    console.log(earth);
-    console.log(config);
 
     const go = new Go();
 
@@ -30,7 +25,7 @@ async function run(config) {
 
     earthlyShutdown();
 
-    await goExitHandle;
+    //await goExitHandle;
 
     if (!(output instanceof Uint8Array) || output.length == 0) {
         return Response.json({
@@ -55,9 +50,9 @@ function requestToConfiguration(request) {
         size = 512;
         errors.push("parameter `size` could not be parsed");
     }
-    if (size < 16 || size > 2048) {
-        size = Math.max(16, Math.min(2048, size));
-        errors.push("parameter `size` was outside range [16-2048]");
+    if (size < 16 || size > 1024) {
+        size = Math.max(16, Math.min(1024, size));
+        errors.push("parameter `size` was outside range [16-1024]");
     }
 
     let latitude = parseFloat(searchParams.get('latitude') || "0.0");
