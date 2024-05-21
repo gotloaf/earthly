@@ -1,7 +1,11 @@
 
 # Don't check in the WASM file or supporting JS files
-/assets/earthly.wasm
-/assets/wasm_exec.js
+/build/earthly.wasm
+/build/wasm_exec.js
 
 # Don't check in test artifacts
 *.test.png
+
+# Cloudflare workers cache
+/.wrangler
+/node_modules

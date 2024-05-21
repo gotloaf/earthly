@@ -44,7 +44,7 @@ globalThis.require("./assets/wasm_exec");
 	await mountedPromise;
 
 	const output = earthlyGenerate(JSON.stringify({
-		size: 2048,
+		size: 1024,
 		background: [0, 0, 0, 0],
 		latitude: -138,
 		longitude: 36,

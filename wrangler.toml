@@ -1,0 +1,11 @@
+name = "earthly-worker"
+main = "./build/worker.mjs"
+compatibility_date = "2024-05-01"
+
+[build]
+command = "powershell ./build_go.ps1"
+
+[[rules]]
+type = "Data"
+globs = ["**/*.png"]
+fallthrough = false
