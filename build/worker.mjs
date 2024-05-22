@@ -25,7 +25,7 @@ async function run(config) {
 
     earthlyShutdown();
 
-    //await goExitHandle;
+    await goExitHandle;
 
     if (!(output instanceof Uint8Array) || output.length == 0) {
         return Response.json({

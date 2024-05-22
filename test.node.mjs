@@ -12,7 +12,7 @@ globalThis.TextEncoder = TextEncoder;
 globalThis.TextDecoder = TextDecoder;
 globalThis.crypto ??= crypto;
 
-globalThis.require("./build/wasm_exec");
+globalThis.require("./build/wasm_exec_tinygo_edge");
 
 (async () => {
 	// Load assets ahead of time
@@ -29,7 +29,7 @@ globalThis.require("./build/wasm_exec");
 		}
 	})
 
-	const wasmData = await fs_promises.readFile("./build/earthly.wasm");
+	const wasmData = await fs_promises.readFile("./build/earthly_tinygo.wasm");
 	const instantiated = await WebAssembly.instantiate(wasmData, go.importObject);
 
 	// In cmd/wasm/main.go we expect that a signal handler `_earthlyResolve` exists that allows us to know our program has mounted.
