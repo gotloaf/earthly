@@ -5,6 +5,13 @@
 /build/earthly_tinygo.wasm
 /build/wasm_exec_tinygo.js
 
+# Don't check in server build
+/build/server
+/build/server.exe
+
+# Don't check in docs build
+/build/docs
+
 # Don't check in test artifacts
 *.test.png
 

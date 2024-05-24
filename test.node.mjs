@@ -46,8 +46,8 @@ globalThis.require("./build/wasm_exec_tinygo_edge");
 	const output = earthlyGenerate(JSON.stringify({
 		size: 512,
 		background: [0, 0, 0, 0],
-		latitude: -138,
-		longitude: 36,
+		longitude: -138,
+		latitude: 36,
 		roll: -30,
 		halo: true,
 		radius: 1.0,

@@ -1,6 +1,6 @@
 
-import "./wasm_exec.js"
-import mod from "./earthly.wasm";
+import "./wasm_exec_tinygo_edge.js"
+import mod from "./earthly_tinygo.wasm";
 
 async function run(config) {
     const earth = await import(
@@ -24,8 +24,6 @@ async function run(config) {
     const output = earthlyGenerate(JSON.stringify(config), new Uint8Array(earth.default));
 
     earthlyShutdown();
-
-    await goExitHandle;
 
     if (!(output instanceof Uint8Array) || output.length == 0) {
         return Response.json({

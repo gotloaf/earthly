@@ -9,19 +9,19 @@ import (
 )
 
 type EarthlyWASM struct {
-	generateCallback	js.Func
+	generateCallback js.Func
 
 	/*
-	Channel & function that indicates when the WASM program should shut down.
-	If we shut down too early, the runtime doesn't stay alive for when it needs to be called.
-	If we don't trigger this, the shutdown is not graceful.
+		Channel & function that indicates when the WASM program should shut down.
+		If we shut down too early, the runtime doesn't stay alive for when it needs to be called.
+		If we don't trigger this, the shutdown is not graceful.
 	*/
-	done				chan struct{}
-	shutdownCallback	js.Func
+	done             chan struct{}
+	shutdownCallback js.Func
 }
 
 func New() *EarthlyWASM {
-	return &EarthlyWASM {
+	return &EarthlyWASM{
 		done: make(chan struct{}),
 	}
 }
@@ -32,7 +32,7 @@ func (app *EarthlyWASM) Initialize() {
 			return `
 			earthlyGenerate takes two (2) arguments:
 			[1] a JSON-encoded string containing the generation config;
-			[2] a Uint8Array containing a equirectangular PNG for the earth
+			[2] a Uint8Array containing a equirectangular JPEG for the earth
 			`
 		}
 
@@ -54,7 +54,7 @@ func (app *EarthlyWASM) Initialize() {
 
 		buffer := config.Generate(earthly.EarthlyBuffers{
 			Earth: earthBuffer,
-		})
+		}, true)
 		data_bytes := buffer.Bytes()
 		js_buffer := js.Global().Get("Uint8Array").New(len(data_bytes))
 		js.CopyBytesToJS(js_buffer, data_bytes)

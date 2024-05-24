@@ -9,13 +9,13 @@ import (
 )
 
 type EarthlyConfig struct {
-	Size       int
-	Background []uint8
-	Latitude   float64
-	Longitude  float64
-	Roll       float64
-	Halo       bool
-	Radius     float64
+	Size       int     `json:"size"`
+	Background []uint8 `json:"background"`
+	Latitude   float64 `json:"latitude"`
+	Longitude  float64 `json:"longitude"`
+	Roll       float64 `json:"roll"`
+	Halo       bool    `json:"halo"`
+	Radius     float64 `json:"radius"`
 }
 
 type EarthlyBuffers struct {
@@ -42,16 +42,22 @@ func AlphaComposite(
 	return uint8(final_r), uint8(final_g), uint8(final_b), uint8(final_alpha * 255.0)
 }
 
-func (config *EarthlyConfig) Generate(buffers EarthlyBuffers) *bytes.Buffer {
+func (config *EarthlyConfig) Generate(buffers EarthlyBuffers, isJPEG bool) *bytes.Buffer {
 	canvas := image.NewNRGBA(image.Rect(0, 0, config.Size, config.Size))
-	earth, err := jpeg.Decode(bytes.NewReader(buffers.Earth))
-
-	earthTexWidth := earth.Bounds().Dx()
-	earthTexHeight := earth.Bounds().Dy()
+	var earth image.Image
+	var err error
+	if isJPEG {
+		earth, err = jpeg.Decode(bytes.NewReader(buffers.Earth))
+	} else {
+		earth, err = png.Decode(bytes.NewBuffer(buffers.Earth))
+	}
 
 	if err != nil {
 		return new(bytes.Buffer)
 	}
+
+	earthTexWidth := earth.Bounds().Dx()
+	earthTexHeight := earth.Bounds().Dy()
 
 	var halfSize float64 = float64(config.Size) / 2.0
 	var onePxSize = 1.0 / halfSize
@@ -65,20 +71,20 @@ func (config *EarthlyConfig) Generate(buffers EarthlyBuffers) *bytes.Buffer {
 	}
 
 	// Pre-calculate the longitude and latitude's rotation matrix coefficients
-	latitudeRad := config.Latitude * (math.Pi / 180)
-	latitudeSin := math.Sin(latitudeRad)
-	latitudeCos := math.Cos(latitudeRad)
 	longitudeRad := config.Longitude * (math.Pi / 180)
 	longitudeSin := math.Sin(longitudeRad)
 	longitudeCos := math.Cos(longitudeRad)
+	latitudeRad := config.Latitude * (math.Pi / 180)
+	latitudeSin := math.Sin(latitudeRad)
+	latitudeCos := math.Cos(latitudeRad)
 	rollRad := config.Roll * (math.Pi / 180)
 	rollSin := math.Sin(rollRad)
 	rollCos := math.Cos(rollRad)
 
 	matrix := []float64{
-		(latitudeCos*rollCos - latitudeSin*longitudeSin*rollSin), (latitudeSin*longitudeSin*rollCos + latitudeCos*rollSin), -(latitudeSin * longitudeCos),
-		(longitudeCos * -rollSin), (longitudeCos * rollCos), (longitudeSin),
-		(latitudeSin*rollCos + latitudeCos*longitudeSin*rollSin), (-latitudeCos*longitudeSin*rollCos + latitudeSin*rollSin), (latitudeCos * longitudeCos),
+		(longitudeCos*rollCos - longitudeSin*latitudeSin*rollSin), (longitudeSin*latitudeSin*rollCos + longitudeCos*rollSin), -(longitudeSin * latitudeCos),
+		(latitudeCos * -rollSin), (latitudeCos * rollCos), (latitudeSin),
+		(longitudeSin*rollCos + longitudeCos*latitudeSin*rollSin), (-longitudeCos*latitudeSin*rollCos + longitudeSin*rollSin), (longitudeCos * latitudeCos),
 	}
 
 	for py := 0; py < config.Size; py++ {
@@ -102,16 +108,16 @@ func (config *EarthlyConfig) Generate(buffers EarthlyBuffers) *bytes.Buffer {
 			sphereY2 := matrix[3]*sphereX1 + matrix[4]*sphereY1 + matrix[5]*sphereZ1
 			sphereZ2 := matrix[6]*sphereX1 + matrix[7]*sphereY1 + matrix[8]*sphereZ1
 
-			projectedLongitude := math.Asin(sphereY2)
-			projectedLatitude := math.Atan2(-sphereX2, sphereZ2)
+			projectedLatitude := math.Asin(sphereY2)
+			projectedLongitude := math.Atan2(-sphereX2, sphereZ2)
 
 			// Sample from the earth texture
 			sampleX := earthTexWidth - 1 - (int(
-				(projectedLatitude+math.Pi)*(float64(earthTexWidth)/(math.Pi*2)),
+				(projectedLongitude+math.Pi)*(float64(earthTexWidth)/(math.Pi*2)),
 			)+earthTexWidth)%earthTexWidth
 
 			sampleY := earthTexHeight - 1 - int(
-				(projectedLongitude+math.Pi*0.5)*(float64(earthTexHeight)/math.Pi),
+				(projectedLatitude+math.Pi*0.5)*(float64(earthTexHeight)/math.Pi),
 			)
 
 			if sampleY < 0 {
