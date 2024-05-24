@@ -36,7 +36,7 @@ func main() {
 	// Swagger endpoint
 	r.Mount("/swagger", httpSwagger.WrapHandler)
 
-	http.ListenAndServe(":8080", r)
+	http.ListenAndServe("127.0.0.1:8080", r)
 }
 
 // RootGenerate godoc

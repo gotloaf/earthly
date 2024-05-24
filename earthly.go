@@ -82,9 +82,9 @@ func (config *EarthlyConfig) Generate(buffers EarthlyBuffers, isJPEG bool) *byte
 	rollCos := math.Cos(rollRad)
 
 	matrix := []float64{
-		(longitudeCos*rollCos - longitudeSin*latitudeSin*rollSin), (longitudeSin*latitudeSin*rollCos + longitudeCos*rollSin), -(longitudeSin * latitudeCos),
+		(longitudeCos*rollCos + longitudeSin*latitudeSin*rollSin), (-longitudeSin*latitudeSin*rollCos + longitudeCos*rollSin), (longitudeSin * latitudeCos),
 		(latitudeCos * -rollSin), (latitudeCos * rollCos), (latitudeSin),
-		(longitudeSin*rollCos + longitudeCos*latitudeSin*rollSin), (-longitudeCos*latitudeSin*rollCos + longitudeSin*rollSin), (longitudeCos * latitudeCos),
+		(-longitudeSin*rollCos + longitudeCos*latitudeSin*rollSin), (-longitudeCos*latitudeSin*rollCos - longitudeSin*rollSin), (longitudeCos * latitudeCos),
 	}
 
 	for py := 0; py < config.Size; py++ {
