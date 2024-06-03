@@ -7,6 +7,10 @@
     </picture>
 </h1>
 
+[![Release](https://img.shields.io/github/release/gotloaf/earthly.svg?color=success&style=flat-square)](https://github.com/gotloaf/earthly/releases/latest)
+[![Go Report Card](https://goreportcard.com/badge/github.com/gotloaf/earthly)](https://goreportcard.com/report/github.com/gotloaf/earthly)
+[![Tests](https://github.com/gotloaf/earthly/workflows/test/badge.svg)](https://github.com/gotloaf/earthly/actions)
+
 Earthly is an API for generating images of Earth. The core rendering functionality is accessible via HTTP GET, making it available either via the request library of your choice, or by generating URLs to be directly included into Markdown or other similar documents.
 
 A hosted version is available at [`https://earthly.gotloaf.dev`](https://earthly.gotloaf.dev/?size=512&longitude=135&latitude=30&roll=-15). Swagger format API documentation is [also available](https://earthly.gotloaf.dev/swagger/index.html), compliant with OpenAPI 2.0.

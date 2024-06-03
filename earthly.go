@@ -89,7 +89,7 @@ func (config *EarthlyConfig) Generate(buffers EarthlyBuffers, isJPEG bool) *byte
 
 	for py := 0; py < config.Size; py++ {
 		for px := 0; px < config.Size; px++ {
-			var r, g, b, a uint8 = 0, 0, 0, 0
+			var r, g, b, a uint8
 
 			var u, v float64 = (float64(px) - halfSize) * onePxSize, -(float64(py) - halfSize) * onePxSize
 			magnitude := math.Sqrt(math.Pow(u, 2.0) + math.Pow(v, 2.0))
@@ -122,9 +122,6 @@ func (config *EarthlyConfig) Generate(buffers EarthlyBuffers, isJPEG bool) *byte
 
 			if sampleY < 0 {
 				sampleY = 0
-			}
-			if sampleY >= earthTexHeight {
-				sampleY = earthTexHeight
 			}
 
 			earthR, earthG, earthB, _ := earth.At(sampleX, sampleY).RGBA()

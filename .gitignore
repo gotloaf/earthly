@@ -18,3 +18,7 @@
 # Cloudflare workers cache
 /.wrangler
 /node_modules
+
+# Code coverage
+/coverage.out
+/coverage.html
