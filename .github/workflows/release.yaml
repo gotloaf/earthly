@@ -36,4 +36,4 @@ jobs:
           set -x
           export tag_name="${GITHUB_REF##*/}"
           zip ./earthly-linux-${tag_name}.zip ./earthly_server ./earthly_cli ./build/equirectangular/* ./build/docs/*
-          hub release create -a ./earthly-linux-${tag_name}.zip "${tag_name}"
+          hub release create -a ./earthly-linux-${tag_name}.zip "${tag_name}" -m "Release ${tag_name}"
