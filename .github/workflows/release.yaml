@@ -16,20 +16,20 @@ jobs:
         with:
           go-version: '1.22'
       - name: Install swagger
-        run:
+        run: |
           go install github.com/swaggo/swag/cmd/swag@latest
       - name: Build docs
-        run:
+        run: |
           swag init -d "./" -g ./cmd/server/main.go -o ./build/docs
       - name: Build releases
-        run:
+        run: |
           go build -o ./earthly_server ./cmd/server
           go build -o ./earthly_cli ./cmd/cli
       - name: Zip and upload release
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run:
+        run: |
           set -x
           export tag_name="${GITHUB_REF##*/}"
           zip ./earthly-linux-${tag_name}.zip ./earthly_server ./earthly_cli ./build/equirectangular/* ./build/docs/*
