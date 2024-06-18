@@ -31,6 +31,7 @@ jobs:
       - name: Zip and upload release
         shell: bash
         env:
+          GITHUB_USER: ${{ secrets.GITHUB_USER }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -x
